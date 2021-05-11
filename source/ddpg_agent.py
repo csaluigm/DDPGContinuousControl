@@ -19,18 +19,19 @@ class Agent():
     """Interacts with and learns from the environment."""
     
     def __init__(self, state_size, action_size, random_seed):
+        self.gradient_clipping = True
         self.state_size = state_size
         self.action_size = action_size
         self.seed = random.seed(random_seed)
         self.config = Config()
         # Actor Network (w/ Target Network)
-        self.actor_local = Actor(state_size, action_size, random_seed,fc1_units=258,fc2_units=128).to(device)
-        self.actor_target = Actor(state_size, action_size, random_seed,fc1_units=258,fc2_units=128).to(device)
+        self.actor_local = Actor(state_size, action_size, random_seed,fc1_units=256,fc2_units=128).to(device)
+        self.actor_target = Actor(state_size, action_size, random_seed,fc1_units=256,fc2_units=128).to(device)
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=self.config.LR_ACTOR)
 
         # Critic Network (w/ Target Network)
-        self.critic_local = Critic(state_size, action_size, random_seed,fcs1_units=258,fc2_units=128).to(device)
-        self.critic_target = Critic(state_size, action_size, random_seed,fcs1_units=258,fc2_units=128).to(device)
+        self.critic_local = Critic(state_size, action_size, random_seed,fcs1_units=256,fc2_units=128).to(device)
+        self.critic_target = Critic(state_size, action_size, random_seed,fcs1_units=256,fc2_units=128).to(device)
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=self.config.LR_CRITIC, weight_decay=self.config.WEIGHT_DECAY)
         self.noise = OUNoise(action_size, random_seed)
 
@@ -40,11 +41,14 @@ class Agent():
     def step(self, state, action, reward, next_state, done):
         self.memory.add(state, action, reward, next_state, done)
 
-        if len(self.memory) > self.config.BATCH_SIZE and self.step_count % 4 == 0:
-            experiences = self.memory.sample()
-            self.learn(experiences, self.config.GAMMA)
+        self.step_count += 1
 
-        self.step_count = self.step_count +1
+        if len(self.memory) > self.config.BATCH_SIZE and self.step_count % self.config.UPDATE_EVERY == 0:
+            for i in range(self.config.LEARN_LOOP): 
+                experiences = self.memory.sample()
+                self.learn(experiences, self.config.GAMMA)
+
+        # self.step_count += 1
 
     def act(self, state, eps, add_noise=True):
         state = torch.from_numpy(state).float().to(device)
@@ -74,8 +78,13 @@ class Agent():
         critic_loss = F.mse_loss(Q_expected, Q_targets)
         # Minimize the loss
         self.critic_optimizer.zero_grad()
+
         critic_loss.backward()
-        # torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), 1)
+
+        if self.gradient_clipping:
+            # use gradient clipping
+            torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), 1)
+
         self.critic_optimizer.step()
 
         # ---------------------------- update actor ---------------------------- #
@@ -86,10 +95,11 @@ class Agent():
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-        # if self.step_count % 20 == 0:
+        
+        if self.step_count % self.config.UPDATE_EVERY == 0:
         # ----------------------- update target networks ----------------------- #
-        self.soft_update(self.critic_local, self.critic_target, self.config.TAU)
-        self.soft_update(self.actor_local, self.actor_target, self.config.TAU)                     
+            self.soft_update(self.critic_local, self.critic_target, self.config.TAU)
+            self.soft_update(self.actor_local, self.actor_target, self.config.TAU)                     
 
     def soft_update(self, local_model, target_model, tau):
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
