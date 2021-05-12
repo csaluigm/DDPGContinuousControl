@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from model.model import Actor, Critic
+from model import Actor, Critic
 from config import Config
 from ou_noise import OUNoise
 from replay_buffer import ReplayBuffer
