@@ -20,7 +20,7 @@ brain_name = env.brain_names[0]
 brain = env.brains[brain_name]
 
 
-def train(episodes=300,max_t=1000):
+def train(episodes=1000,max_t=1000):
     agent = Agent(state_size=33, action_size=4, random_seed=0)
     scores = []                      
     scores_window = deque(maxlen=100)  
@@ -31,7 +31,7 @@ def train(episodes=300,max_t=1000):
         env_info = env.reset(train_mode=True)[brain_name]
         state = env_info.vector_observations[0]
         score = 0
-
+        agent.reset()
         for _ in range(max_t +1):
             # print(step)
             action = agent.act(state,eps)
@@ -59,7 +59,8 @@ def train(episodes=300,max_t=1000):
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
             torch.save(agent.qnetwork_local.state_dict(), 'solved_score_30.pth')
 
-    torch.save(agent.qnetwork_local.state_dict(), 'trained_model.pth')
+    torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
+    torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
     return scores
 def load_model(model,path='trained_model.pth'):
     model.load_state_dict(torch.load(os.path.join(THIS_FOLDER, path)))

@@ -33,6 +33,10 @@ class Agent():
         self.critic_local = Critic(state_size, action_size, random_seed,fcs1_units=256,fc2_units=128).to(device)
         self.critic_target = Critic(state_size, action_size, random_seed,fcs1_units=256,fc2_units=128).to(device)
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=self.config.LR_CRITIC, weight_decay=self.config.WEIGHT_DECAY)
+
+        self.soft_update(self.actor_local, self.actor_target, 1)
+        self.soft_update(self.critic_local, self.critic_target, 1)
+
         self.noise = OUNoise(action_size, random_seed)
 
         self.memory = ReplayBuffer(action_size, self.config.BUFFER_SIZE, self.config.BATCH_SIZE, random_seed, device)
@@ -43,10 +47,10 @@ class Agent():
 
         self.step_count += 1
 
-        if len(self.memory) > self.config.BATCH_SIZE and self.step_count % self.config.UPDATE_EVERY == 0:
-            for i in range(self.config.LEARN_LOOP): 
-                experiences = self.memory.sample()
-                self.learn(experiences, self.config.GAMMA)
+        if len(self.memory) > self.config.BATCH_SIZE:
+            # for i in range(self.config.LEARN_LOOP): 
+            experiences = self.memory.sample()
+            self.learn(experiences, self.config.GAMMA)
 
         # self.step_count += 1
 
