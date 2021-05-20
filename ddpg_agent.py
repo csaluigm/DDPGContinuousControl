@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from model import Actor, Critic
+from modelv2 import Actor, Critic
 from config import Config
 from ou_noise import OUNoise
 from replay_buffer import ReplayBuffer
@@ -47,8 +47,7 @@ class Agent():
 
         self.step_count += 1
 
-        if len(self.memory) > self.config.BATCH_SIZE:
-            # for i in range(self.config.LEARN_LOOP): 
+        if len(self.memory) > self.config.BATCH_SIZE and self.step_count % self.config.UPDATE_EVERY == 0:
             experiences = self.memory.sample()
             self.learn(experiences, self.config.GAMMA)
 
@@ -100,10 +99,10 @@ class Agent():
         actor_loss.backward()
         self.actor_optimizer.step()
         
-        if self.step_count % self.config.UPDATE_EVERY == 0:
-        # ----------------------- update target networks ----------------------- #
-            self.soft_update(self.critic_local, self.critic_target, self.config.TAU)
-            self.soft_update(self.actor_local, self.actor_target, self.config.TAU)                     
+        # if self.step_count % 20 == 0:
+        self.soft_update(self.critic_local, self.critic_target, self.config.TAU)
+        self.soft_update(self.actor_local, self.actor_target, self.config.TAU)                     
+
 
     def soft_update(self, local_model, target_model, tau):
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):

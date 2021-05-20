@@ -1,5 +1,5 @@
-from config import Config
 from  ddpg_agent import Agent
+from config import Config
 from collections import deque
 from cli import Cli
 import numpy as np
@@ -29,24 +29,24 @@ def train(episodes=1000,max_t=1000):
 
     for i_episode in range(1, episodes+1):
         env_info = env.reset(train_mode=True)[brain_name]
-        state = env_info.vector_observations[0]
+        state = env_info.vector_observations
         score = 0
         agent.reset()
         for _ in range(max_t +1):
             # print(step)
             action = agent.act(state,eps)
             env_info = env.step(action)[brain_name]       
-            next_state = env_info.vector_observations[0]   # get the next state
-            reward = env_info.rewards[0]                   # get the reward
-            done = env_info.local_done[0]                  # see if episode has finished
+            next_state = env_info.vector_observations   # get the next state
+            reward = env_info.rewards                   # get the reward
+            done = env_info.local_done                  # see if episode has finished
 
             agent.step(state, action, reward, next_state, done)
             state = next_state
-            score += reward
-            if done:
+            score += env_info.rewards[0]
+            if np.any(done):
                 break 
 
-        eps = max(config.EPS_END, config.EPS_DECAY * eps)
+            eps = max(config.EPS_END, eps - config.LIN_EPS_DECAY)
         scores_window.append(score)      
         scores.append(score)              
 
