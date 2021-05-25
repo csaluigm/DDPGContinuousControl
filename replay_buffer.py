@@ -21,7 +21,7 @@ class ReplayBuffer:
         experiences = random.sample(self.memory, k=self.batch_size)
 
         states = self.stack_by_field("state",experiences).float().to(self.device)
-        actions = self.stack_by_field("action",experiences).long().to(self.device)
+        actions = self.stack_by_field("action",experiences).float().to(self.device)
         rewards = self.stack_by_field("reward",experiences).float().to(self.device)
         next_states = self.stack_by_field("next_state",experiences).float().to(self.device)
 

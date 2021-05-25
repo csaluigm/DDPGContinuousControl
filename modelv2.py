@@ -1,5 +1,4 @@
 import numpy as np
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -33,7 +32,7 @@ class Actor(nn.Module):
         x = F.relu(self.bn1(self.fc1(state)))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
-        return F.tanh(self.fc4(x))
+        return torch.tanh(self.fc4(x))
 
 
 class Critic(nn.Module):
@@ -58,7 +57,7 @@ class Critic(nn.Module):
     def forward(self, state, action):
         # xs = F.relu(self.fcs1(state))
         xs = F.relu(self.bn1(self.fcs1(state)))
-        x = torch.cat((xs, action.float()), dim=1)
+        x = torch.cat((xs, action), dim=1)
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         return self.fc4(x)

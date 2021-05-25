@@ -23,15 +23,15 @@ brain = env.brains[brain_name]
 def train(episodes=1000,max_t=1000):
     agent = Agent(state_size=33, action_size=4, random_seed=0)
     scores = []                      
-    scores_window = deque(maxlen=100)  
+    scores_window = deque(maxlen=2)  
     config = Config()
     eps = config.EPS_START
 
     for i_episode in range(1, episodes+1):
         env_info = env.reset(train_mode=True)[brain_name]
         state = env_info.vector_observations
-        score = 0
         agent.reset()
+        score = np.zeros(1) 
         for _ in range(max_t +1):
             # print(step)
             action = agent.act(state,eps)
@@ -40,24 +40,26 @@ def train(episodes=1000,max_t=1000):
             reward = env_info.rewards                   # get the reward
             done = env_info.local_done                  # see if episode has finished
 
+            score += env_info.rewards
+
             agent.step(state, action, reward, next_state, done)
             state = next_state
-            score += env_info.rewards[0]
+            eps = eps - config.LIN_EPS_DECAY
+            eps = np.maximum(eps, config.EPS_END)
+
             if np.any(done):
                 break 
-
-            eps = max(config.EPS_END, eps - config.LIN_EPS_DECAY)
         scores_window.append(score)      
         scores.append(score)              
 
         print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)), end="")
-        if i_episode % 100 == 0:
+        if i_episode % 2 == 0:
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
 
         mean = np.mean(scores_window)
         if mean > 30.0 and mean <= 30.2:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'solved_score_30.pth')
+            # torch.save(agent.qnetwork_local.state_dict(), 'solved_score_30.pth')
 
     torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
     torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
