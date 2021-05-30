@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from unityagents import UnityEnvironment
 import pandas as pd
 import os
+import sys
 
 THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,54 +22,63 @@ brain = env.brains[brain_name]
 
 
 def train(episodes=1000,max_t=1000):
-    agent = Agent(state_size=33, action_size=4, random_seed=0)
-    scores = []                      
-    scores_window = deque(maxlen=2)  
-    config = Config()
-    eps = config.EPS_START
+    try:
+        agent = Agent(state_size=33, action_size=4, random_seed=0)
+        scores = []                      
+        scores_window = deque(maxlen=100)  
+        config = Config()
+        eps = config.EPS_START
 
-    for i_episode in range(1, episodes+1):
-        env_info = env.reset(train_mode=True)[brain_name]
-        state = env_info.vector_observations
-        agent.reset()
-        score = np.zeros(1) 
-        for _ in range(max_t +1):
-            # print(step)
-            action = agent.act(state,eps)
-            env_info = env.step(action)[brain_name]       
-            next_state = env_info.vector_observations   # get the next state
-            reward = env_info.rewards                   # get the reward
-            done = env_info.local_done                  # see if episode has finished
+        for i_episode in range(1, episodes+1):
+            env_info = env.reset(train_mode=True)[brain_name]
+            state = env_info.vector_observations
+            agent.reset()
+            score = np.zeros(1) 
+            for _ in range(max_t +1):
+                action = agent.act(state,eps)
+                env_info = env.step(action)[brain_name]       
+                next_state = env_info.vector_observations   # get the next state
+                reward = env_info.rewards                   # get the reward
+                done = env_info.local_done                  # see if episode has finished
 
-            score += env_info.rewards
+                score += env_info.rewards
 
-            agent.step(state, action, reward, next_state, done)
-            state = next_state
-            eps = eps - config.LIN_EPS_DECAY
-            eps = np.maximum(eps, config.EPS_END)
+                agent.step(state, action, reward, next_state, done)
+                state = next_state
+                eps = eps - config.LIN_EPS_DECAY
+                eps = np.maximum(eps, config.EPS_END)
 
-            if np.any(done):
-                break 
-        scores_window.append(score)      
-        scores.append(score)              
+                if np.any(done):
+                    break 
 
-        print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)), end="")
-        if i_episode % 2 == 0:
-            print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
+            scores_window.append(score)      
+            scores.append(score)              
 
-        mean = np.mean(scores_window)
-        if mean > 30.0 and mean <= 30.2:
-            print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
-            # torch.save(agent.qnetwork_local.state_dict(), 'solved_score_30.pth')
+            print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)), end="")
+            if i_episode % 2 == 0:
+                print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
 
-    torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
-    torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
-    return scores
+            mean = np.mean(scores_window)
+            if mean > 30.0 and mean <= 31.5:
+                print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
+                torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
+                torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
+
+        torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
+        torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
+        return scores
+
+    except KeyboardInterrupt:
+        torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
+        torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
+        plot_score_chart(scores)
+        sys.exit(0)
+
 def load_model(model,path='trained_model.pth'):
     model.load_state_dict(torch.load(os.path.join(THIS_FOLDER, path)))
 
 def test():
-        agent = Agent(state_size=37, action_size=4, seed=0)
+        agent = Agent(state_size=33, action_size=4, seed=0)
         load_model(agent.qnetwork_local)    
         env_info = env.reset(train_mode=False)[brain_name]
 

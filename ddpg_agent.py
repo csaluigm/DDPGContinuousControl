@@ -13,11 +13,8 @@ from replay_buffer import ReplayBuffer
 print(torch.__version__)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
 print(torch.cuda.is_available())
 class Agent():
-    """Interacts with and learns from the environment."""
-    
     def __init__(self, state_size, action_size, random_seed):
         self.gradient_clipping = True
         self.state_size = state_size
@@ -44,14 +41,11 @@ class Agent():
         
     def step(self, state, action, reward, next_state, done):
         self.memory.add(state, action, reward, next_state, done)
-
         self.step_count += 1
 
         if len(self.memory) > self.config.BATCH_SIZE and self.step_count % self.config.UPDATE_EVERY == 0:
             experiences = self.memory.sample()
             self.learn(experiences, self.config.GAMMA)
-
-        # self.step_count += 1
 
     def act(self, state, eps, add_noise=True):
         state = torch.from_numpy(state).float().to(device)
@@ -59,9 +53,9 @@ class Agent():
         with torch.no_grad():
             action = self.actor_local(state).cpu().data.numpy()
         self.actor_local.train()
-        if add_noise:
-            action += self.noise.sample() * eps
 
+        if add_noise:
+            action = action + self.noise.sample() * eps
         return np.clip(action, -1, 1)
 
     def reset(self):
@@ -99,9 +93,9 @@ class Agent():
         actor_loss.backward()
         self.actor_optimizer.step()
         
-        # if self.step_count % 20 == 0:
-        self.soft_update(self.critic_local, self.critic_target, self.config.TAU)
-        self.soft_update(self.actor_local, self.actor_target, self.config.TAU)                     
+        if self.step_count % 10 == 0:
+            self.soft_update(self.critic_local, self.critic_target, self.config.TAU)
+            self.soft_update(self.actor_local, self.actor_target, self.config.TAU)                     
 
 
     def soft_update(self, local_model, target_model, tau):
