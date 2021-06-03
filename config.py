@@ -11,4 +11,4 @@ class Config:
         self.LR_ACTOR = 1e-4         # learning rate of the actor
         self.LR_CRITIC = 1e-3        # learning rate of the critic
         self.WEIGHT_DECAY = 0        # L2 weight decay
-        self.UPDATE_EVERY = 2
+        self.UPDATE_EVERY = 2        # skip some learn steps

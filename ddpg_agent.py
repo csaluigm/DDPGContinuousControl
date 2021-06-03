@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from modelv2 import Actor, Critic
+from model import Actor, Critic
 from config import Config
 from ou_noise import OUNoise
 from replay_buffer import ReplayBuffer
@@ -15,28 +15,28 @@ print(torch.__version__)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.is_available())
 class Agent():
-    def __init__(self, state_size, action_size, random_seed):
+    def __init__(self, state_size, action_size, seed):
         self.gradient_clipping = True
         self.state_size = state_size
         self.action_size = action_size
-        self.seed = random.seed(random_seed)
+        self.seed = random.seed(seed)
         self.config = Config()
         # Actor Network (w/ Target Network)
-        self.actor_local = Actor(state_size, action_size, random_seed).to(device)
-        self.actor_target = Actor(state_size, action_size, random_seed).to(device)
+        self.actor_local = Actor(state_size, action_size, seed).to(device)
+        self.actor_target = Actor(state_size, action_size, seed).to(device)
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=self.config.LR_ACTOR)
 
         # Critic Network (w/ Target Network)
-        self.critic_local = Critic(state_size, action_size, random_seed).to(device)
-        self.critic_target = Critic(state_size, action_size, random_seed).to(device)
+        self.critic_local = Critic(state_size, action_size, seed).to(device)
+        self.critic_target = Critic(state_size, action_size, seed).to(device)
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=self.config.LR_CRITIC, weight_decay=self.config.WEIGHT_DECAY)
 
-        self.soft_update(self.actor_local, self.actor_target, 1)
-        self.soft_update(self.critic_local, self.critic_target, 1)
+        # self.soft_update(self.actor_local, self.actor_target, 1)
+        # self.soft_update(self.critic_local, self.critic_target, 1)
 
-        self.noise = OUNoise(action_size, random_seed)
+        self.noise = OUNoise(action_size, seed)
 
-        self.memory = ReplayBuffer(action_size, self.config.BUFFER_SIZE, self.config.BATCH_SIZE, random_seed, device)
+        self.memory = ReplayBuffer(action_size, self.config.BUFFER_SIZE, self.config.BATCH_SIZE, seed, device)
         self.step_count = 0
         
     def step(self, state, action, reward, next_state, done):
@@ -96,7 +96,6 @@ class Agent():
         if self.step_count % 10 == 0:
             self.soft_update(self.critic_local, self.critic_target, self.config.TAU)
             self.soft_update(self.actor_local, self.actor_target, self.config.TAU)                     
-
 
     def soft_update(self, local_model, target_model, tau):
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):

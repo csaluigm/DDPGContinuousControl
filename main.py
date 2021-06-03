@@ -20,10 +20,9 @@ env = UnityEnvironment(file_name="./Unity/Reacher.exe")
 brain_name = env.brain_names[0]
 brain = env.brains[brain_name]
 
-
-def train(episodes=1000,max_t=1000):
+def train(episodes=700,max_t=1000):
     try:
-        agent = Agent(state_size=33, action_size=4, random_seed=0)
+        agent = Agent(state_size=33, action_size=4, seed=0)
         scores = []                      
         scores_window = deque(maxlen=100)  
         config = Config()
@@ -40,11 +39,10 @@ def train(episodes=1000,max_t=1000):
                 next_state = env_info.vector_observations   # get the next state
                 reward = env_info.rewards                   # get the reward
                 done = env_info.local_done                  # see if episode has finished
-
                 score += env_info.rewards
-
                 agent.step(state, action, reward, next_state, done)
                 state = next_state
+
                 eps = eps - config.LIN_EPS_DECAY
                 eps = np.maximum(eps, config.EPS_END)
 
@@ -61,52 +59,51 @@ def train(episodes=1000,max_t=1000):
             mean = np.mean(scores_window)
             if mean > 30.0 and mean <= 31.5:
                 print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
-                torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
-                torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
+                torch.save(agent.actor_local.state_dict(), 'solved_actor_trained_model.pth')
+                torch.save(agent.critic_local.state_dict(), 'solved_critic_trained_model.pth')
 
-        torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
-        torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
+        torch.save(agent.actor_local.state_dict(), 'actor_trained_model.pth')
+        torch.save(agent.critic_local.state_dict(), 'critic_trained_model.pth')
         return scores
 
     except KeyboardInterrupt:
-        torch.save(agent.actor_local.state_dict(), 'trained_model.pth')
-        torch.save(agent.critic_local.state_dict(), 'trained_model.pth')
+        torch.save(agent.actor_local.state_dict(), 'interrupt_actor_trained_model.pth')
+        torch.save(agent.critic_local.state_dict(), 'interrupt_critic_trained_model.pth')
         plot_score_chart(scores)
         sys.exit(0)
 
-def load_model(model,path='trained_model.pth'):
+def load_model(model,path):
     model.load_state_dict(torch.load(os.path.join(THIS_FOLDER, path)))
 
 def test():
         agent = Agent(state_size=33, action_size=4, seed=0)
-        load_model(agent.qnetwork_local)    
+        load_model(agent.critic_local,'solved_critic_trained_model.pth')    
+        load_model(agent.actor_local,'solved_actor_trained_model.pth')    
         env_info = env.reset(train_mode=False)[brain_name]
 
-        state = env_info.vector_observations[0]
-        score = 0
+        state = env_info.vector_observations
+        score = np.zeros(1) 
         while True:
-            action = agent.act(state, 0)
-            env_info = env.step(int(action))[brain_name]       
-            next_state = env_info.vector_observations[0]   # get the next state
-            reward = env_info.rewards[0]                   # get the reward
-            done = env_info.local_done[0]                  # see if episode has finished
+            action = agent.act(state, 0, False)
+            env_info = env.step(action)[brain_name]       
+            next_state = env_info.vector_observations   # get the next state
+            reward = env_info.rewards                   # get the reward
+            done = env_info.local_done                  # see if episode has finished
 
             state = next_state
             score += reward
-            if done:
-                print('\r\tTest Score: {:.2f}'.format( score, end=""))
+
+            if np.any(done):
+                print('\r\tTest Score: {:.2f}'.format( score[0], end=""))
                 break 
 
 def print_env_info(env):
     env_info = env.reset(train_mode=True)[brain_name]
-
     # number of agents in the environment
     print('Number of agents:', len(env_info.agents))
-
     # number of actions
     action_size = brain.vector_action_space_size
     print('Number of actions:', action_size)
-
     # examine the state space 
     state = env_info.vector_observations[0]
     print('States look like:', state)
@@ -122,7 +119,7 @@ def plot_score_chart(scores):
     plt.plot(rolling_mean)
     plt.show()
 
-print_env_info(env)
+# print_env_info(env)
 
 if args.train:
     scores = train()
