@@ -31,9 +31,6 @@ class Agent():
         self.critic_target = Critic(state_size, action_size, seed).to(device)
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=self.config.LR_CRITIC, weight_decay=self.config.WEIGHT_DECAY)
 
-        # self.soft_update(self.actor_local, self.actor_target, 1)
-        # self.soft_update(self.critic_local, self.critic_target, 1)
-
         self.noise = OUNoise(action_size, seed)
 
         self.memory = ReplayBuffer(action_size, self.config.BUFFER_SIZE, self.config.BATCH_SIZE, seed, device)
