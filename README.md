@@ -1,7 +1,7 @@
 # DDPG Agent
 DDPG agent for the Unity Reacher environment
 
-![](agent.gif)
+![](https://media.giphy.com/media/doeuwYIlGFE50GS6Hq/giphy.gif)
 # Project Details
 
 The environment of this project has 4 possible actions corresponding to torque applicable to two joints (each with value in [-1,1]).
